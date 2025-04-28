@@ -1,0 +1,243 @@
+# .bashrc
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
+fi
+
+# Uncomment the following line if you don't like systemctl's auto-paging feature:
+# export SYSTEMD_PAGER=
+
+# User specific aliases and functions
+
+export VISUAL=vim
+export EDITOR="$VISUAL"
+export P4EDITOR="vim +29 "
+
+# Alias common
+alias l='ls --color'
+alias ls='ls --color'
+alias ll='ls -la --color'
+# alias grep='rg --ignore-case'
+alias rg='rg --ignore-case'
+alias cd..='cd ..'
+alias cd-='cd -'
+# alias cat='/home/nileshunhale/.cargo/bin/bat'
+
+
+
+
+alias tls='tmux ls'
+alias tat='tmux a -t '
+
+#cd
+alias cdnilesh='cd ~/nilesh'
+
+#perforce
+alias p4='a p4'
+
+
+alias vlog='/home/nileshunhale/nilesh/viewLog.sh'
+
+alias gdbp='sudo gdb -p $(pidof python)'
+alias r='reset'
+
+
+LANG=en_US.UTF-8
+LC_ALL=en_US.UTF-8
+LC_CTYPE="en_US.UTF-8"
+
+HISTSIZE=654321
+HISTFILESIZE=654321
+HISTIGNORE='a dir*'
+
+
+
+# Avoid duplicates
+HISTCONTROL=ignoredups:erasedups
+# When the shell exits, append to the history file instead of overwriting it
+shopt -s histappend
+
+HISTFILE=/home/nileshunhale/nilesh/cmdHistory.log
+
+# settitle() {
+#    printf "\033k$1\033\\"
+# }
+
+#ssh() {
+#    settitle "$*"
+#    command ssh "$@"
+#    settitle "bash"
+#}
+#
+# After each command, append to the history file and reread it
+# export PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
+
+
+
+# PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r"
+if [ "$TERM_PROGRAM" != "vscode" ]; then
+  PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r"
+else
+   EDITOR="code --wait"
+   P4EDITOR="code --wait"
+   VISUAL="code --wait"
+fi
+
+
+
+eval $(TERM=xterm dircolors)
+alias ls='ls --color=auto'
+
+function is_interactive_shell() {
+	# https://www.gnu.org/software/bash/manual/html_node/Is-this-Shell-Interactive_003f.html
+	[[ "$-" =~ "i" ]]
+}
+
+#export TZ="/usr/share/zoneinfo/Asia/Calcutta"
+export TZ=Asia/Kolkata
+# bat
+export PATH="/home/nileshunhale/.cargo/bin:$PATH"
+export PATH="$PATH:/opt/nvim-linux-x86_64/bin"
+
+# Auto-install nvim in interactive shells if it's missing
+if [[ $- == *i* ]]; then
+    if ! command -v nvim &> /dev/null; then
+        echo "Neovim not found. Installing..."
+        curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
+        sudo rm -rf /opt/nvim
+        sudo tar -C /opt -xzf nvim-linux-x86_64.tar.gz
+        #echo 'export PATH="/opt/nvim-linux64/bin:$PATH"' >> ~/.bashrc
+        export PATH="/opt/nvim-linux64/bin:$PATH"
+    fi
+
+    # Set editor environment variables if nvim is available (either system or newly installed)
+    if command -v nvim &> /dev/null && [ "$TERM_PROGRAM" != "vscode" ]; then
+        export PATH="/opt/nvim-linux64/bin:$PATH"  # Safe to re-export even if already in path
+        export VISUAL=nvim
+        export EDITOR="$VISUAL"
+        export P4EDITOR=nvim
+    fi
+fi
+
+
+source ~/nilesh/private.sh
+
+
+
+__fzfcmd() {
+  [ -n "${TMUX_PANE-}" ] && { [ "${FZF_TMUX:-0}" != 0 ] || [ -n "${FZF_TMUX_OPTS-}" ]; } &&
+    echo "fzf-tmux ${FZF_TMUX_OPTS:--d${FZF_TMUX_HEIGHT:-40%}} -- " || echo "fzf"
+}
+
+fzf-file-search() {
+   item="$(find '/src' '/home/nileshunhale' -maxdepth 4 -type d \( -path '/proc/*' -o -path '/dev/*' \) -prune -false -o -iname '*' 2>/dev/null | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore $FZF_DEFAULT_OPTS $FZF_CTRL_T_OPTS" $(__fzfcmd) -i -m "$@")"
+   if [[ -d ${item} ]]; then
+      history -s "cd "${item}""
+      cd "${item}" || return 1
+  elif [[ -f ${item} ]]; then
+      history -s "vim "${item}""
+      (vim "${item}" < /dev/tty) || return 1
+  else
+      return 1
+  fi
+}
+
+
+
+if is_interactive_shell; then
+   [ -f ~/.fzf.bash ] && source ~/.fzf.bash
+   # if [ -f /.dockerenv ]; then
+   #    bind -x '"\e[A":"__fzf_history__"'
+   # fi
+   bind 'TAB:menu-complete'
+   # bind '"\e[Z":menu-complete-backward'
+   bind 'set show-all-if-ambiguous on'
+   bind "set completion-ignore-case on"
+   bind "set menu-complete-display-prefix on"
+   bind -x '"\C-f":"fzf-file-search"'
+   bind -x '"\C-l":reset'
+fi
+
+
+
+
+# # Auto-attach to tmux session 0 or create if it doesn't exist
+# if [ "$TERM_PROGRAM" = "vscode" ]; then
+#     # Check if we're already in a tmux session
+#     if [ -z "$TMUX" ]; then
+#         # Check if tmux is installed, install if not
+#         if ! command -v tmux &> /dev/null; then
+#             a4 yum install tmux -y
+#             setarch x86_64 a4 yum install -y glibc libstdc++ clang-tools-extra 
+#         fi
+
+#         # Check again if tmux is installed after installation
+#         if command -v tmux &> /dev/null; then
+#             # Check if session 0 exists
+#             if tmux has-session -t 0 2>/dev/null; then
+#                 # Attach to existing session 0
+#                 exec tmux attach-session -t 0
+#             else
+#                 # Create new session 0
+#                 exec tmux new-session -s 0
+#             fi
+#         fi
+#     fi
+# fi
+
+
+# Auto-attach to tmux session 0 or create if it doesn't exist
+# if [ "$TERM_PROGRAM" = "vscode" ]; then
+#     # Get parent PID of the shell, which should be the VS Code terminal process
+#     VSCODE_PID=$(ps -o ppid= -p $$ | tr -d ' ')
+#     LOCK_FILE="/tmp/.vscode_tmux_autoattach_${VSCODE_PID}.lock"
+
+#     # Only execute in the first terminal of this VS Code instance
+#     if [ ! -f "$LOCK_FILE" ]; then
+#         touch "$LOCK_FILE"
+
+#         # Only proceed if we're not already in a tmux session
+#         if [ -z "$TMUX" ]; then
+#             # Ensure tmux is installed
+#             if ! command -v tmux &> /dev/null; then
+#                 echo "tmux not found, installing..."
+#                 a4 yum install tmux -y
+#             fi
+
+#             # Proceed if tmux is now installed
+#             if command -v tmux &> /dev/null; then
+#                 # Attach to existing session 0 or create it
+#                 if tmux has-session -t 0 2>/dev/null; then
+#                     echo "Attaching to tmux session 0..."
+#                     exec tmux attach-session -t 0
+#                 else
+#                     echo "Creating new tmux session 0..."
+#                     exec tmux new-session -s 0
+#                 fi
+#             fi
+#         fi
+#     fi
+# fi
+
+
+
+if [ -d "/src" ]; then
+    cd /src
+fi
+export PATH="/opt/nvim-linux64/bin:$PATH"
+eval $(~/.luarocks/bin/luarocks path)
+# Lua + LuaRocks from hererocks
+export PATH="$HOME/.luarocks/bin:$PATH"
+eval "$($HOME/.luarocks/bin/luarocks path --bin)"
+
+backup() {
+  SRC="$1"
+  DEST_DIR="/home/nileshunhale/nilesh/backup"
+  BASENAME=$(basename "$SRC")
+  TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+  DEST="$DEST_DIR/${BASENAME}_backup_$TIMESTAMP"
+
+  cp -r "$SRC" "$DEST"
+  echo "Backup created at: $DEST"
+}
